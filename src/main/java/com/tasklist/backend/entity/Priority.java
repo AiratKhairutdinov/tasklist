@@ -11,13 +11,13 @@ public class Priority {
 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
-    @Column(name = "id", nullable = false)
+    @Column(name = "id")
     private Long id;
 
-    @Column(name = "title", nullable = false, length = 45)
+    @Column(name = "title")
     private String title;
 
-    @Column(name = "color", nullable = false, length = 45)
+    @Column(name = "color")
     private String color;
 
 
