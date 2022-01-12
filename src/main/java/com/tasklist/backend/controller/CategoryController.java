@@ -1,8 +1,9 @@
 package com.tasklist.backend.controller;
 
 import com.tasklist.backend.entity.Category;
-import com.tasklist.backend.entity.Priority;
-import com.tasklist.backend.repo.CategoryRepository;
+import com.tasklist.backend.search.CategorySearchValues;
+import com.tasklist.backend.service.CategoryService;
+import com.tasklist.backend.util.MyLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
@@ -16,25 +17,30 @@ import java.util.NoSuchElementException;
 @RequestMapping("/api/category/")
 public class CategoryController {
 
-    private CategoryRepository categoryRepository;
+    private CategoryService categoryService;
 
     @Autowired
-    public CategoryController(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
+    public CategoryController(CategoryService categoryService) {
+        this.categoryService = categoryService;
     }
 
     @GetMapping("all")
-    public List<Category> categoryList() {
-        return categoryRepository.findAllByOrderByTitleAsc();
+    public List<Category> getCategoryList() {
+
+        MyLogger.displayMethodName("CategoryController: getPriorityList()");
+
+        return categoryService.getCategoryList();
     }
 
     @GetMapping("{id}")
     public ResponseEntity<Category> getCategory(@PathVariable Long id) {
 
+        MyLogger.displayMethodName("CategoryController: getCategory()");
+
         Category category = null;
 
         try {
-            category = categoryRepository.findById(id).get();
+            category = categoryService.getCategory(id);
         } catch (NoSuchElementException e) {
             e.printStackTrace();
             return new ResponseEntity("There is no category with id = " + id, HttpStatus.NOT_ACCEPTABLE);
@@ -45,6 +51,9 @@ public class CategoryController {
 
     @PostMapping("add")
     public ResponseEntity<Category> addCategory(@RequestBody Category category) {
+
+        MyLogger.displayMethodName("CategoryController: addCategory()");
+
         if (category.getId() != null || category.getId() != 0) {
             return new ResponseEntity("Redundant param: Id must be null", HttpStatus.NOT_ACCEPTABLE);
         }
@@ -52,19 +61,47 @@ public class CategoryController {
         if (category.getTitle() == null || category.getTitle().trim().length() == 0) {
             return new ResponseEntity("Missed param: title", HttpStatus.NOT_ACCEPTABLE);
         }
-        return ResponseEntity.ok(categoryRepository.save(category));
+        return ResponseEntity.ok(categoryService.addCategory(category));
+    }
+
+    @PutMapping("update")
+    public ResponseEntity updateCategory(@RequestBody Category category) {
+
+        MyLogger.displayMethodName("CategoryController: updateCategory()");
+
+        if (category.getId() == null || category.getId() == 0) {
+            return new ResponseEntity("Missed param: Id", HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        if (category.getTitle() == null || category.getTitle().trim().length() == 0) {
+            return new ResponseEntity("Missed param: title", HttpStatus.NOT_ACCEPTABLE);
+        }
+
+        categoryService.updateCategory(category);
+
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     @DeleteMapping("delete/{id}")
-    public ResponseEntity<Category> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity deleteCategory(@PathVariable Long id) {
+
+        MyLogger.displayMethodName("CategoryController: deleteCategory()");
 
         try {
-            categoryRepository.deleteById(id);
+            categoryService.deleteCategory(id);
         } catch (EmptyResultDataAccessException e) {
             e.printStackTrace();
             return new ResponseEntity("There is no category with id = " + id, HttpStatus.NOT_ACCEPTABLE);
         }
 
         return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<Category>> searchCategory(@RequestBody CategorySearchValues categorySearchValues) {
+
+        MyLogger.displayMethodName("CategoryController: search()");
+
+        return ResponseEntity.ok(categoryService.searchCategory(categorySearchValues));
     }
 }
